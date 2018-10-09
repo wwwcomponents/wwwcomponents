@@ -3,20 +3,10 @@
  * models: some sort of tool for shared and non-shared models;
  * http-requests specific to APIs with related to authentication+authorization
  * TODO see if this leaks and how; tests; expand/fix
+ * TODO 
  */
 export const state = ({
 	[Symbol.for('models')]: new WeakMap()
-	/*
-		input a url with hash like '#//stuff/things/?this=that&other'
-		return original url decorated with
-			hashpath: ['stuff','things']
-			hashparam: {this:'that', other:''}
-
-		https://developer.mozilla.org/docs/Web/API/URL
-		https://nodejs.org/api/url.html
-	 */
-	,urlHashTranslate: function(url=location){
-	}
 	,routing: function(self){
 		// intercept clicks; derived from pwa-helper/router.js
 		self.document.body.addEventListener('click', e => {
@@ -84,8 +74,22 @@ export const state = ({
 			self.state = this;
 
 			data = new WeakMap();
+			/* usage:
+				window.addEventListener('model', (e)=>{
+					console.log('this will show every global update:', e.detail);
+				})
+				window.addEventListener(`model-${ state.global.keyName }`, (e)=>{
+					console.log(`show only ${ e.type } updates:`, e.detail);
+				})
+				state.global.keyName = {stuff: 'things'};
+				=> events 'model' and 'model-keyName' dispatch
+				window.dispatchEvent(new CustomEvent('modelupdate', {detail: {key: 'keyName', value: {stuff:'things'}}}));
+				=> state.global.keyName.stuff === 'things' // true
+				=> events 'model' and 'model-keyName' dispatch
+			 */
 			self.addEventListener('modelupdate', this.modelUpdate.bind(this));
 			// provide a global model for sharing
+			// it doesn't do much: no default, no remapping onto a new object or anything
 			this.global = models.global = new Proxy(data, {
 				get: function($, key){
 					return $[key];

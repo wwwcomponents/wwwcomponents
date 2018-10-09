@@ -5,7 +5,6 @@ class DemoApp extends HTMLElement{
 		super();
 
 		this.data = {name: 'example'};
-		this.shared = state.global;
 
 		this.attachShadow({mode:'open'}).innerHTML = this.render();
 		this.shadowRoot.querySelector('button').addEventListener('click', this.clicked.bind(this));
@@ -14,6 +13,7 @@ class DemoApp extends HTMLElement{
 		let handler = this.updated;
 		if(!handler) handler = this.updated = this.update.bind(this);
 		window.addEventListener('model', handler);
+		window.addEventListener('model-demoapp', handler);
 		window.addEventListener('locationchange', handler);
 	}
 	disconnectedCallback(){
@@ -21,15 +21,29 @@ class DemoApp extends HTMLElement{
 		window.removeEventListener('locationchange', handler);
 		window.removeEventListener('model', handler);
 	}
+	get model(){
+		return this.data;
+	}
+	set model(data){
+		Object.assign(this.data, data);
+		
+		return true;
+	}
 	update(e){
 		console.log(e.type, e.detail);
 		switch(e.type){
+		case 'model-demoapp':
+		break;
+		case 'locationchange':
+		break;
 		case 'model':
 		break;
+		default:
+			console.warn(`TODO ${e.type}`, e.detail);
 		};
 	}
 	clicked(e){
-		this.shared.count = Date.now();
+		this.data.demoapp = Date.now();
 	}
 	render(){
 return `
@@ -59,7 +73,7 @@ main{padding:1rem;flex:1 1 auto;width:100%;height:auto;margin:0 auto 0 auto;box-
 </header>
 <section>&sect; ${ this.data.name } <button>button time</button></section>
 <main>
-	${ this.shared.selected || 'nothing selected' }
+	${ this.data.demoapp || '~' }
 	<slot></slot>
 </main>
 `;
