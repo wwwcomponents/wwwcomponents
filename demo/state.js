@@ -1,17 +1,11 @@
 /*
- * routing: location events, history.state (restorable view/location info);
+ * routing: location events, history.state (restorable info);
  * models: some sort of tool for shared and non-shared models;
  * http-requests specific to APIs with related to authentication+authorization
  * TODO see if this leaks and how; tests; expand/fix
  */
 export const state = ({
 	[Symbol.for('models')]: new WeakMap()
-	,urlSearchMap: function(params = {}, item=''){
-		var part = item.split('='), name = part[0].trim();
-		if(!name) return params;
-		params[ part[0] ] = decodeURIComponent( part[1] || '' );
-		return params;
-	}
 	/*
 		input a url with hash like '#//stuff/things/?this=that&other'
 		return original url decorated with
@@ -22,12 +16,8 @@ export const state = ({
 		https://nodejs.org/api/url.html
 	 */
 	,urlHashTranslate: function(url=location){
-		var stuff, parts = url.hash.match(/^(#[^?]*)?(?:\??(.*))?$/) || [];
-		url.hashpath = (parts[1] || '').trim().replace(/\/{2,}/g,'/').replace(/\/$/,'').split('/').splice(1);
-		url.hashparam = (parts[2] || '').trim().replace(/\&{2,}/g,'&').replace(/\&$/,'').split('&').reduce(this.urlSearchMap, {});
-		return url;
 	}
-	,routing: function(self=window){
+	,routing: function(self){
 		// intercept clicks; derived from pwa-helper/router.js
 		self.document.body.addEventListener('click', e => {
 			if (e.defaultPrevented || e.button !== 0 ||
@@ -48,7 +38,7 @@ export const state = ({
 			e.preventDefault();
 			if (href !== location.href) {
 				self.history.pushState({}, '', href);
-				state.locationChange();
+				state.locationchange();
 			}
 		});
 		// fix history methods so they update the document title (for bookmarks, history usability)
@@ -62,7 +52,12 @@ export const state = ({
 			if(title) self.document.title = title;
 			return this._replaceState(state, title, url);
 		}
-		// pass location to all handlers on event.detail; provide a convenient way to access the state at event.location.state
+		/* pass location to listeners as event.detail;
+			convenience properties for:
+		   	location.state (restorable state)
+		   	location.history (manipulate state, etc as needed)
+			location.urlHash or .url to use the desired URL.searchParams, URL.pathname, etc
+		 */
 		Object.defineProperties(self.location, {
 			history: {
 				get: function(){ return history }
@@ -70,12 +65,17 @@ export const state = ({
 			,state: {
 				get: function(){ return history.state }
 			}
+			,urlHash: {
+				get: function(){ return new URL(location.hash.replace(/^#/,''), location.origin); }
+			}
+			,url: {
+				get: function(){ return new URL(location, location.origin); }
+			}
 		});
-		self.addEventListener('popstate', this.locationChange.bind(this));
+		self.addEventListener('popstate', this.locationchange.bind(this));
 	}
-	,locationChange: function(e){
-		const detail = this.urlHashTranslate(location);
-		self.dispatchEvent(new CustomEvent('locationchange', {detail: detail}));
+	,locationchange: function(){
+		self.dispatchEvent(new CustomEvent('locationchange', {detail:self.location}));
 	}
 	,init: function(){
 		const models = this[Symbol.for('models')];
@@ -103,7 +103,7 @@ export const state = ({
 			});
 
 			this.routing(self);
-			this.locationChange();
+			this.locationchange();
 		};
 		return this;
 	}
@@ -153,7 +153,7 @@ export const state = ({
 					msg = res.statusText || '';
 					msg = msg ? (msg + ' ' + result.appmsg) : result.appmsg;
 
-					window.dispatchEvent(new CustomEvent('loginChange', {detail: {error: 'login again ('+(msg || 'unauthorized token')+')'}}));
+					self.dispatchEvent(new CustomEvent('loginChange', {detail: {error: 'login again ('+(msg || 'unauthorized token')+')'}}));
 					return Promise.reject(result);
 				};
 
