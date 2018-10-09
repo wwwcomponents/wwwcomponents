@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+<title>demo - sample exploration</title>
+<style>
+html, body{background-color:#fff;height:100%;width:100%;min-width:320px; -ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;-webkit-font-smoothing: antialiased;-moz-osx-font-smoothing: grayscale;-webkit-tap-highlight-color: transparent;}
+body {margin: 0;font-family:system, system-ui, -apple-system, ".SFNSText-Regular", "San Francisco", "Oxygen", "Ubuntu", "Roboto", "Segoe UI", "Helvetica Neue", "Lucida Grande", sans-serif; line-height: 1.3;}
+pre, code{font-family:"SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", "Lucida Console", monospace;}
+iframe{border: 1;}
+</style>
+</head><body>
+	<demo-app></demo-app>
+	<script>
+	(function(document){
+		var $ = document.querySelector('base');
+		if($) return;
+		$ = document.createElement('base');
+		$.href = location.origin + location.pathname;
+		document.head.appendChild($);
+		console.log(`Using base href ${document.baseURI} remove this script or add a base tag if this is not desired.`);
+	})(self.document);
+	</script>
+	<script type="module" src="./demo-app.js"></script>
+</body></html>

@@ -1,0 +1,5 @@
+:host{
+	--demo-dark: rgb(14, 61, 88);
+	--demo-textcolor: #fff;
+}
+:host([hidden]), [hidden]{display:none !important;}
