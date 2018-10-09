@@ -42,7 +42,7 @@ class DemoApp extends HTMLElement{
 		const detail = e.detail;
 		switch(e.type){
 		case 'locationchange':
-			console.log(e.type, detail);
+			console.log(e.type, detail.state, detail);
 		break;
 		case 'model':
 			this.redraw();
