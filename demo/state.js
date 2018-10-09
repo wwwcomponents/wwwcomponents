@@ -76,7 +76,6 @@ export const state = ({
 	,locationChange: function(e){
 		const detail = this.urlHashTranslate(location);
 		self.dispatchEvent(new CustomEvent('locationchange', {detail: detail}));
-		this.global.location = detail;
 	}
 	,init: function(){
 		const models = this[Symbol.for('models')];
