@@ -4,10 +4,19 @@ class DemoApp extends HTMLElement{
 	constructor(){
 		super();
 
-		this.data = {name: 'example'};
+		this.data = {
+			name: 'example'
+			, index: this.constructor.index
+			, global: state.global
+		};
 
 		this.attachShadow({mode:'open'}).innerHTML = this.render();
 		this.shadowRoot.querySelector('button').addEventListener('click', this.clicked.bind(this));
+	}
+	static get index(){
+		var n = this.count || (this.count = 0);
+		this.count++;
+		return n;
 	}
 	connectedCallback(){
 		let handler = this.updated;
@@ -30,20 +39,28 @@ class DemoApp extends HTMLElement{
 		return true;
 	}
 	update(e){
-		console.log(e.type, e.detail);
+		const detail = e.detail;
 		switch(e.type){
-		case 'model-demoapp':
-		break;
 		case 'locationchange':
+			console.log(e.type, detail);
 		break;
 		case 'model':
+			this.redraw();
 		break;
 		default:
-			console.warn(`TODO ${e.type}`, e.detail);
+			console.warn(`TODO ${e.type}`, detail);
 		};
 	}
+
 	clicked(e){
-		this.data.demoapp = Date.now();
+		this.data.global.demo = Date.now();
+	}
+	redraw(){
+		requestAnimationFrame(this.renderHTML.bind(this));
+	}
+	renderHTML(){
+		const data = this.data;
+		this.innerHTML = `shared ${this.data.global.demo}`;
 	}
 	render(){
 return `
@@ -71,10 +88,9 @@ main{padding:1rem;flex:1 1 auto;width:100%;height:auto;margin:0 auto 0 auto;box-
 		<a href="#/space?time=${Date.now()}">time</a>
 	</nav>
 </header>
-<section>&sect; ${ this.data.name } <button>button time</button></section>
+<section>&sect; ${ this.data.index + 1 } ${ this.data.name } <button>button time</button></section>
 <main>
-	${ this.data.demoapp || '~' }
-	<slot></slot>
+	<slot>${ this.data.global.demo || '~' }</slot>
 </main>
 `;
 	}
