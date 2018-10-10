@@ -67,11 +67,11 @@ export const state = ({
 	,locationchange: function(){
 		self.dispatchEvent(new CustomEvent('locationchange', {detail:self.location}));
 	}
-	,init: function(){
+	,init: function(self){
 		const models = this[Symbol.for('models')];
-		let data;
 		if(!self.state){
-			self.state = this;
+			let data;
+			Object.defineProperty(self, 'state', {value: this});
 
 			data = new WeakMap();
 			/* usage:
