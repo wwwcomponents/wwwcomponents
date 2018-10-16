@@ -48,7 +48,7 @@ export const state = ({
 		   	location.history (manipulate state, etc as needed)
 			location.urlHash or .url to use the desired URL.searchParams, URL.pathname, etc
 		 */
-		Object.defineProperties(self.location, {
+		Object.defineProperties(Location.prototype, {
 			history: {
 				get: function(){ return history }
 			}
@@ -124,7 +124,7 @@ export const state = ({
 		jwt = 'TODO';
 		if(jwt){
 			// req.headers{a:b} => Headers instance w/ these headers
-			req.headers = new Headers(req.headers);
+			req.headers = new Headers(req.headers||{});
 			req.headers.set("Authorization", 'Bearer '+jwt);
 		}else{
 			// don't need loginChange event here, that's already handled
@@ -161,7 +161,8 @@ export const state = ({
 					return Promise.reject(result);
 				};
 
-				if(!res.body) return result;
+				// res.body not supported by Firefox
+				if(!res.headers.get('content-length')) return result;
 
 				var contentType = res.headers.get('content-type') || '';
 				return res.text()
