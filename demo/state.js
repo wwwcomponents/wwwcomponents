@@ -6,7 +6,7 @@
  * TODO 
  */
 export const state = ({
-	[Symbol.for('models')]: new WeakMap()
+	[Symbol.for('models')]: {}
 	,routing: function(self){
 		// intercept clicks; derived from pwa-helper/router.js
 		self.document.body.addEventListener('click', e => {
@@ -19,6 +19,7 @@ export const state = ({
 					anchor.getAttribute('rel') === 'external') return;
 
 			const href = anchor.href;
+			// TODO tel: and others where nothing should happen
 			if (!href || href.indexOf('mailto:') !== -1) return;
 
 			const location = self.location;
@@ -27,21 +28,21 @@ export const state = ({
 
 			e.preventDefault();
 			if (href !== location.href) {
-				self.history.pushState({}, '', href);
-				state.locationchange();
+				self.history.pushState(history.state || {}, document.title, href);
+				state.locationchange(e);
 			}
 		});
 		// fix history methods so they update the document title (for bookmarks, history usability)
-		self.history._pushState = self.history.pushState;
-		self.history._replaceState = self.history.replaceState;
-		self.history.pushState = function pushStateFix(state, title, url){
-			if(title) self.document.title = title;
+		Reflect.defineProperty(History.prototype, '_pushState', {value: History.prototype.pushState});
+		Reflect.defineProperty(History.prototype, '_replaceState', {value: History.prototype.replaceState});
+		Reflect.defineProperty(History.prototype, 'pushState', {value: function pushState(state, title='', url){
+			self.document.title = title;
 			return this._pushState(state, title, url);
-		}
-		self.history.replaceState = function replaceStateFix(state, title, url){
-			if(title) self.document.title = title;
+		}});
+		Reflect.defineProperty(History.prototype, 'replaceState', {value: function replaceState(state, title='', url){
+			self.document.title = title;
 			return this._replaceState(state, title, url);
-		}
+		}});
 		/* pass location to listeners as event.detail;
 			convenience properties for:
 		   	location.state (restorable state)
@@ -64,16 +65,18 @@ export const state = ({
 		});
 		self.addEventListener('popstate', this.locationchange.bind(this));
 	}
-	,locationchange: function(){
-		self.dispatchEvent(new CustomEvent('locationchange', {detail:self.location}));
+	,locationchange: function(e){
+		var event = new CustomEvent('locationchange', {detail:self.location});
+		event.location = self.location;
+		event.originalEvent = e;
+		self.dispatchEvent(event);
 	}
 	,init: function(self){
 		const models = this[Symbol.for('models')];
 		if(!self.state){
-			let data;
+			const data = {};
 			Object.defineProperty(self, 'state', {value: this});
 
-			data = new WeakMap();
 			/* usage:
 				window.addEventListener('model', (e)=>{
 					console.log('this will show every global update:', e.detail);
@@ -107,7 +110,7 @@ export const state = ({
 			});
 
 			this.routing(self);
-			this.locationchange();
+			this.locationchange(new CustomEvent('state-init'));
 		};
 		return this;
 	}
@@ -166,20 +169,32 @@ export const state = ({
 
 				var contentType = res.headers.get('content-type') || '';
 				return res.text()
-				.then(function _fetchedOk(body){
-					var res = result;
-					try{
-						res.text = body;
-						if(/application\/json/.test(contentType)) res.body = JSON.parse(body);
-						else res.body = body;
-					}catch(err){
-						res.error = err;
-						res.body = null;
-					};
+				.then(state.fetchReader)
+				.then(function _fetchRead(res){
 					return (!res.error && res.response && res.response.ok) ? res: Promise.reject(res);
 				})
 			})
 			.then(resolve, reject);
+		});
+	}
+	,fetchReader: function(res){
+		res.read = {};
+		return res.text()
+		.then(function textReadOk(body){
+			const contentType = res.headers.get('content-type') || '';
+			res.read.text = body;
+			try{
+				if(/json/i.test(contentType)){
+					res.read.body = JSON.parse(body);
+				};
+			}catch(err){
+				res.read.error = err;
+				return Promise.reject(res);
+			};
+			return res;
+		}, function textReadFail(err){
+			res.read.error = err;
+			return Promise.reject(res);
 		});
 	}
 	,rep: function(res){
