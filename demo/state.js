@@ -33,16 +33,18 @@ export const state = ({
 			}
 		});
 		// fix history methods so they update the document title (for bookmarks, history usability)
-		Reflect.defineProperty(History.prototype, '_pushState', {value: History.prototype.pushState});
-		Reflect.defineProperty(History.prototype, '_replaceState', {value: History.prototype.replaceState});
-		Reflect.defineProperty(History.prototype, 'pushState', {value: function pushState(state, title='', url){
-			self.document.title = title;
-			return this._pushState(state, title, url);
-		}});
-		Reflect.defineProperty(History.prototype, 'replaceState', {value: function replaceState(state, title='', url){
-			self.document.title = title;
-			return this._replaceState(state, title, url);
-		}});
+		Object.defineProperties(History.prototype, {
+			_pushState: {value: History.prototype.pushState}
+			,_replaceState: {value: History.prototype.replaceState}
+			,pushState: {value: function pushState(state, title='', url){
+				self.document.title = title;
+				return this._pushState(state, title, url);
+			}}
+			,replaceState: {value: function replaceState(state, title='', url){
+				self.document.title = title;
+				return this._replaceState(state, title, url);
+			}}
+		});
 		/* pass location to listeners as event.detail;
 			convenience properties for:
 		   	location.state (restorable state)
@@ -75,7 +77,7 @@ export const state = ({
 		const models = this[Symbol.for('models')];
 		if(!self.state){
 			const data = {};
-			Object.defineProperty(self, 'state', {value: this});
+			Reflect.defineProperty(self, 'state', {value: this});
 
 			/* usage:
 				window.addEventListener('model', (e)=>{
